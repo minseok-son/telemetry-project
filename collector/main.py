@@ -46,7 +46,7 @@ logger.addHandler(handler)
 logging.info("Collector service started with Log Rotation.")
 
 # 1. Setup the Network Client
-client = RabbitMQClient(host='164.152.21.149', user='admin', password='password')
+client = RabbitMQClient(host='164.152.21.149', user='guest', password='guest')
 
 # 2. Setup the Tracker
 tracker = WindowTracker(client)
