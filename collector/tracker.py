@@ -1,6 +1,7 @@
 import ctypes
 import threading
 import time
+import logging
 
 class WindowTracker:
     """Handles Windows API hooks and filtering of window events."""
@@ -28,7 +29,7 @@ class WindowTracker:
     def on_window_change(self, hwnd):
         new_title = self.get_active_window_title(hwnd)
         if new_title != self.last_title and self.is_valid_title(new_title):
-            print(f"[*] Sending: {new_title}")
+            logging.info(f"Window Change Detected: {new_title}")
             self.mq_client.send_telemetry(new_title)
             self.last_title = new_title
     
