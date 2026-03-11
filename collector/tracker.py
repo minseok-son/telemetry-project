@@ -10,6 +10,7 @@ class WindowTracker:
         self.last_title = None
         self.user32 = ctypes.windll.user32
         self.ignored_titles = {"Task Switching", "Task View", "Search", ""}
+        self.last_send_time = 0
 
         self.EVENT_SYSTEM_FOREGROUND = 0x003
         self.WINEVENT_OUTOFCONTEXT = 0x000
@@ -26,12 +27,18 @@ class WindowTracker:
         self.user32.GetWindowTextW(hwnd, buff, length + 1)
         return buff.value
 
-    def on_window_change(self, hwnd):
+    def on_window_change(self, hwnd, is_heartbeat=False):
         new_title = self.get_active_window_title(hwnd)
-        if new_title != self.last_title and self.is_valid_title(new_title):
-            logging.info(f"Window Change Detected: {new_title}")
+        
+        if not self.is_valid_title(new_title):
+            return
+
+        if new_title != self.last_title or is_heartbeat:
+            label = "[HEARTBEAT]" if is_heartbeat and new_title == self.last_title else "[CHANGE]"
+            logging.info(f"{label} Sending to MQ: {new_title}")
             self.mq_client.send_telemetry(new_title)
             self.last_title = new_title
+            self.last_send_time = time.time()
     
     def start_polling_thread(self):
         def loop():
