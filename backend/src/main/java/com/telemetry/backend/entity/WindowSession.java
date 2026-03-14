@@ -1,6 +1,6 @@
 package com.telemetry.backend.entity;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.persistence.Entity;
@@ -31,7 +31,7 @@ public class WindowSession {
     private String windowTitle;
     private String category;
     private String subCategory;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
+    private Instant startTime;
+    private Instant endTime;
     private Long durationSeconds;
 }
