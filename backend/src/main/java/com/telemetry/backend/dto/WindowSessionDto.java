@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public record WindowSessionDto(
     UUID id,
-    String windowTitle,
+    String title,
     String category,
     String subCategory,
     Long durationSeconds,
