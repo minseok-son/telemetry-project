@@ -26,7 +26,7 @@ class RabbitMQClient:
     def send_telemetry(self, title):
         payload = {
             "timestamp": time.time(),
-            "window_title": title,
+            "title": title,
         }
 
         try:
