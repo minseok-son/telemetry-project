@@ -11,16 +11,23 @@ class WindowTracker:
         self.user32 = ctypes.windll.user32
         self.ignored_titles = {"Task Switching", "Task View", "Search", ""}
         self.last_send_time = 0
+        self._state_lock = threading.Lock()
 
         self.EVENT_SYSTEM_FOREGROUND = 0x003
         self.WINEVENT_OUTOFCONTEXT = 0x000
+    
+    def normalize_title(self, title):
+        if not title:
+            return ""
+    
+        return title.replace('*', '').replace('●', '').strip()
 
     def is_valid_title(self, title):
         """Filters out 'noise' like Alt-Tab overlays or empty strings."""
         if not title or title.strip() in self.ignored_titles:
             return False
         return True
-
+ 
     def get_active_window_title(self, hwnd):
         length = self.user32.GetWindowTextLengthW(hwnd)
         buff = ctypes.create_unicode_buffer(length + 1)
@@ -28,17 +35,19 @@ class WindowTracker:
         return buff.value
 
     def on_window_change(self, hwnd, is_heartbeat=False):
-        new_title = self.get_active_window_title(hwnd)
+        new_title = self.normalize_title(self.get_active_window_title(hwnd))
         
         if not self.is_valid_title(new_title):
             return
 
-        if new_title != self.last_title or is_heartbeat:
-            label = "[HEARTBEAT]" if is_heartbeat and new_title == self.last_title else "[CHANGE]"
-            logging.info(f"{label} Sending to MQ: {new_title}")
-            self.mq_client.send_telemetry(new_title)
-            self.last_title = new_title
-            self.last_send_time = time.time()
+        with self._state_lock:
+            if new_title != self.last_title or is_heartbeat:
+                label = "[HEARTBEAT]" if is_heartbeat and new_title == self.last_title else "[CHANGE]"
+                logging.info(f"{label} Sending to MQ: {new_title}")
+                
+                self.mq_client.send_telemetry(new_title)
+                self.last_title = new_title
+                self.last_send_time = time.time()
     
     def start_polling_thread(self):
         def loop():
