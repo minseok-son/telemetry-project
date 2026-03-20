@@ -19,8 +19,14 @@ class WindowTracker:
     def normalize_title(self, title):
         if not title:
             return ""
+        
+        clean_title = title.replace('*', '').replace('●', '').strip()
     
-        return title.replace('*', '').replace('●', '').strip()
+        # CRITICAL: Truncate to 255 to match your DB
+        if len(clean_title) > 255:
+            return clean_title[:252] + "..."
+        
+        return clean_title
 
     def is_valid_title(self, title):
         """Filters out 'noise' like Alt-Tab overlays or empty strings."""
