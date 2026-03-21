@@ -51,4 +51,7 @@ public interface WindowSessionRepository extends JpaRepository<WindowSession, UU
         @Param("classification") WindowClassification classification,
         @Param("title") String title
     );
+
+    @Query("SELECT s FROM WindowSession s WHERE s.endTime IS NULL AND s.title != 'LOCKED' AND s.updatedAt < :cutoff")
+    List<WindowSession> findStaleSessions(Instant cutoff);
 }
