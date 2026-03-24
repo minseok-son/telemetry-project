@@ -1,0 +1,82 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    # container_name: telemetry-mq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${MQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${MQ_PASS}
+    volumes:
+     - rabbitmq_data:/var/lib/rabbitmq
+
+  postgres:
+    image: postgres:15
+    # container_name: telemetry-db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    volumes:
+      - ./backend/target/backend-0.0.1-SNAPSHOT.jar:/app/app.jar
+    depends_on:
+      - rabbitmq
+      - postgres
+    environment:
+      # Postgres
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASS}
+
+      # RabbitMQ
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=${MQ_USER}
+      - SPRING_RABBITMQ_PASSWORD=${MQ_PASS}
+    ports:
+      - "8080:8080"
+
+  ml-processor:
+    build:
+      context: ./ml-processor
+      dockerfile: Dockerfile
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations: 
+          memory: 2G
+    volumes:
+      # Mount your local code so changes reflect instantly without a rebuild
+      - ./ml-processor/processor.py:/app/processor.py
+      # Mount a local folder to store the model weights permanently
+      - ./hf_cache:/root/.cache/huggingface
+    depends_on:
+      - postgres
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+    restart: always
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+  hf_cache:
