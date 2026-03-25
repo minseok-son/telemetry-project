@@ -1,13 +1,12 @@
 import { create } from 'zustand';
-import type { UnlabeledTitle } from '../types/classification';
-import type { Category } from '../types/shared';
+import type { UnlabeledSummary } from '../types/classification';
 
 interface ClassificationState {
-  pendingTitles: UnlabeledTitle[];
-  selectedTitle: UnlabeledTitle | null;
+  pendingTitles: UnlabeledSummary[];
+  selectedTitle: UnlabeledSummary | null;
   isLoading: boolean;
-  setPendingTitles: (titles: UnlabeledTitle[]) => void;
-  setSelectedTitle: (title: UnlabeledTitle | null) => void;
+  setPendingTitles: (titles: UnlabeledSummary[]) => void;
+  setSelectedTitle: (title: UnlabeledSummary | null) => void;
   removeTitle: (windowTitle: string) => void;
 }
 

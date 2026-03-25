@@ -10,7 +10,7 @@ export const WorkbenchLayout = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const titles = await classificationService.getUnlabeledTitles();
+        const titles = await classificationService.getUnlabeledSummaries();
         setPendingTitles(titles);
       } catch (error) {
         console.error("Failed to fetch pending titles:", error);

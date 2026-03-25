@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useClassificationStore } from '../../store/useClassificationStore';
 import type { Category } from '../../types/shared';
+import { classificationService } from '../../services/classificationService';
 
 export const LabelingStation = () => {
   const { selectedTitle, removeTitle, pendingTitles, setSelectedTitle } = useClassificationStore();
@@ -12,8 +13,8 @@ export const LabelingStation = () => {
 
   // Reset local state when the selected title changes
   useEffect(() => {
-    setSelectedCategory(null);
-    setSubCategory('');
+    setSelectedCategory(selectedTitle?.category ?? null);
+    setSubCategory(selectedTitle?.subCategory ?? '');
   }, [selectedTitle]);
 
   const handleSave = useCallback(async () => {
@@ -21,13 +22,11 @@ export const LabelingStation = () => {
 
     setIsSaving(true);
     try {
-      // API CALL
-      // await postClassification({ 
-      //   title: selectedTitle.title, 
-      //   category: selectedCategory, 
-      //   subCategory 
-      // });
-
+      await classificationService.saveClassification({
+        title: selectedTitle.title,
+        category: selectedCategory,
+        subCategory: subCategory
+      })
       console.log(`Saved: ${selectedTitle.title}`);
 
       // Find next item to maintain flow

@@ -54,7 +54,7 @@ export default function App() {
     const targetDay = startOfDay(selectedDate);
 
     return sessions.filter(s => {
-      if (!s.startTime || s.title == "Windows Default Lock Screen" || s.title == "UnlockingWindow") return false;
+      if (!s.startTime || s.title == "LOCKED" || s.title == "UnlockingWindow") return false;
 
       // 1. Convert the UTC string to a Local Date object
       const sessionDate = new Date(s.startTime); 
