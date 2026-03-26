@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.telemetry.backend.entity.SessionStatus;
 import com.telemetry.backend.entity.WindowSession;
 import com.telemetry.backend.repository.WindowSessionRepository;
 
@@ -19,21 +20,25 @@ public class SessionCleanupTask {
     
     private final WindowSessionRepository windowSessionRepository;
 
-    @Scheduled(fixedDelay = 60000) // Runs every 60 seconds
+    @Scheduled(fixedDelay = 60000)
     @Transactional
-    public void cleanupStaleSessions() {
-        // Anything not updated in the last 65 seconds (giving a 5s buffer) is stale
-        Instant cutoff = Instant.now().minusSeconds(65);
+    public void closeTimedOutSessions() { 
+        // "Close" is more specific than "Cleanup"
+        // 90s is 3 missed heartbeats; a safe threshold for 'stale'
+        Instant heartbeatTimeout = Instant.now().minusSeconds(90);
         
         List<WindowSession> staleSessions = windowSessionRepository
-            .findStaleSessions(cutoff);
+            .findOpenSessionsOlderThan(heartbeatTimeout);
 
         for (WindowSession session : staleSessions) {
-            // Use the updatedAt timestamp as the actual endTime 
-            // since it represents the last moment the producer was confirmed active.
-            session.setEndTime(session.getUpdatedAt());
+            // Explicitly move the state to CLOSED
+            session.setStatus(SessionStatus.CLOSED);
             
-            long duration = Duration.between(session.getStartTime(), session.getUpdatedAt()).getSeconds();
+            // The last confirmed activity was the last DB update
+            Instant lastActivity = session.getUpdatedAt();
+            session.setEndTime(lastActivity);
+            
+            long duration = Duration.between(session.getStartTime(), lastActivity).getSeconds();
             session.setDurationSeconds(duration);
             
             windowSessionRepository.save(session);

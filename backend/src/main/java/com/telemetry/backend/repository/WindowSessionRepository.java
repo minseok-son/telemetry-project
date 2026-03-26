@@ -12,12 +12,14 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.telemetry.backend.dto.UnlabeledSummaryDto;
+import com.telemetry.backend.entity.SessionStatus;
 import com.telemetry.backend.entity.WindowClassification;
 import com.telemetry.backend.entity.WindowSession;
 
 @Repository
 public interface WindowSessionRepository extends JpaRepository<WindowSession, UUID> {
-    Optional<WindowSession> findTopByOrderByStartTimeDesc();
+    // Finds the current open session if one exists
+    Optional<WindowSession> findFirstByStatusOrderByStartTimeDesc(SessionStatus status);
 
     // For the Heatmap (get everything for the year)
     List<WindowSession> findByStartTimeAfter(Instant since);
@@ -52,6 +54,7 @@ public interface WindowSessionRepository extends JpaRepository<WindowSession, UU
         @Param("title") String title
     );
 
-    @Query("SELECT s FROM WindowSession s WHERE s.endTime IS NULL AND s.title != 'LOCKED' AND s.updatedAt < :cutoff")
-    List<WindowSession> findStaleSessions(Instant cutoff);
+    // For the Janitor: Finds sessions that are OPEN but haven't been updated
+    @Query("SELECT s FROM WindowSession s WHERE s.status = 'OPEN' AND s.updatedAt < :cutoff")
+    List<WindowSession> findOpenSessionsOlderThan(Instant cutoff);
 }

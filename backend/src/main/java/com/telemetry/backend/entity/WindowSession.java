@@ -10,6 +10,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -45,6 +47,9 @@ public class WindowSession {
     private Instant startTime;
     private Instant endTime;
     private Long durationSeconds;
+
+    @Enumerated(EnumType.STRING)
+    private SessionStatus status = SessionStatus.OPEN;
 
     @CreatedDate
     @Column(updatable = false, nullable = false)
