@@ -51,6 +51,9 @@ public class WindowSession {
     @Enumerated(EnumType.STRING)
     private SessionStatus status = SessionStatus.OPEN;
 
+    @Enumerated(EnumType.STRING)
+    private TerminationReason terminationReason;
+
     @CreatedDate
     @Column(updatable = false, nullable = false)
     private Instant createdAt;

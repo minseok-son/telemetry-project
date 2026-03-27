@@ -8,6 +8,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.telemetry.backend.entity.SessionStatus;
+import com.telemetry.backend.entity.TerminationReason;
 import com.telemetry.backend.entity.WindowSession;
 import com.telemetry.backend.repository.WindowSessionRepository;
 
@@ -33,9 +34,10 @@ public class SessionCleanupTask {
         for (WindowSession session : staleSessions) {
             // Explicitly move the state to CLOSED
             session.setStatus(SessionStatus.CLOSED);
+            session.setTerminationReason(TerminationReason.TIMEOUT);
             
             // The last confirmed activity was the last DB update
-            Instant lastActivity = session.getUpdatedAt();
+            Instant lastActivity = session.getEndTime();
             session.setEndTime(lastActivity);
             
             long duration = Duration.between(session.getStartTime(), lastActivity).getSeconds();

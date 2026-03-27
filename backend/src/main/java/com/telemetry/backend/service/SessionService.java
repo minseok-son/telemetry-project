@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.telemetry.backend.dto.WindowEventDto;
 import com.telemetry.backend.entity.SessionStatus;
+import com.telemetry.backend.entity.TerminationReason;
 import com.telemetry.backend.entity.WindowClassification;
 import com.telemetry.backend.entity.WindowSession;
 import com.telemetry.backend.repository.WindowSessionRepository;
@@ -24,31 +25,35 @@ public class SessionService {
     @Transactional
     public void handleWindowEvent(WindowEventDto dto) {
         Instant eventTime = Instant.ofEpochSecond((long) dto.timestamp());
-
-        // 1. Fetch the latest session regardless of title
         Optional<WindowSession> latestOpt = windowSessionRepository.findFirstByStatusOrderByStartTimeDesc(SessionStatus.OPEN);
 
         if (latestOpt.isPresent()) {
             WindowSession latest = latestOpt.get();
 
-            // --- GAP DETECTION ---
-            // If the gap between the last update and this new event is > 70s,
-            // the previous session is "dead" (Network outage or Crash).
             boolean isGapTooLarge = Duration.between(latest.getEndTime(), eventTime).getSeconds() > 70;
             
-            // 2. HEARTBEAT: Same Window, NO Gap
+            // SCENARIO A: HEARTBEAT (Same window, no gap)
             if (latest.getTitle().equals(dto.title()) && !isGapTooLarge) {
                 updateSessionDuration(latest, eventTime);
                 return;
             }
             
-            // 3. CONTEXT SWITCH
-            if (!isGapTooLarge) {
+            // SCENARIO B: CONTEXT SWITCH or GAP or LOCK
+            // We MUST close the old session now so the Janitor ignores it.
+            latest.setStatus(SessionStatus.CLOSED);
+
+            if (isGapTooLarge) {
+                latest.setTerminationReason(TerminationReason.GAP_RECOVERY);
+            } else {
                 updateSessionDuration(latest, eventTime);
+                latest.setTerminationReason("LOCKED".equals(dto.title()) ? 
+                    TerminationReason.LOCKED : TerminationReason.CONTEXT_SWITCH);
             }
+            
+            windowSessionRepository.save(latest);
         }
         
-        // 4. START NEW SESSION (Unless the new event is "LOCKED")
+        // SCENARIO C: START NEW (Unless Locked)
         if (!"LOCKED".equals(dto.title())) {
             WindowClassification classification = classificationService.handleWindowEvent(dto);
             WindowSession next = new WindowSession();
