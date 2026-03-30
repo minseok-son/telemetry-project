@@ -6,7 +6,7 @@ import { DailyHistogram } from './components/DailyHistogram';
 import { HourlyDetailList } from './components/HourlyDetailList';
 import { getSessionsForHour } from './utils/timeUtils';
 import { toLocalTime } from './utils/timeUtils';
-import { startOfDay, isSameDay } from 'date-fns';
+import { startOfDay, endOfDay } from 'date-fns';
 import { WorkbenchLayout } from './components/workbench/WorkbenchLayout';
 
 export default function App() {
@@ -56,12 +56,15 @@ export default function App() {
     return sessions.filter(s => {
       if (!s.startTime || s.title == "LOCKED" || s.title == "UnlockingWindow") return false;
 
-      // 1. Convert the UTC string to a Local Date object
-      const sessionDate = new Date(s.startTime); 
+      const sessionStart = new Date(s.startTime); 
+      const sessionEnd = new Date(s.endTime);
+
+      const dayStart = startOfDay(targetDay);
+      const dayEnd = endOfDay(targetDay);
       
-      // 2. Compare using date-fns isSameDay
-      // This handles the UTC -> Local conversion automatically
-      return isSameDay(sessionDate, targetDay);
+      return (
+        (sessionStart <= dayEnd && sessionEnd >= dayStart)
+      );
     });
   }, [sessions, selectedDate]);
 
